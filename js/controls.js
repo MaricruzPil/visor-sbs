@@ -13,9 +13,15 @@ export function createCalibrationGUI(host, config, onChange) {
     return controller;
   };
 
+  const optics = gui.addFolder('Pantalla y centros ópticos');
+  add(optics, 'opticalCm', 1, 10, 0.1).name('Distancia entre centros ópticos (cm)');
+  add(optics, 'screenFactor', 0.25, 4, 0.01).name('Factor de pantalla');
+  optics.open();
+  add(gui, 'interactionMode', { 'Mover': 'move', 'Separar / juntar': 'separate' }).name('Gesto de un dedo');
+  add(gui, 'cropTop', 0, 40, 0.1).name('Recorte superior (%)');
   const stereo = gui.addFolder('Paralaje y tamaño');
   add(stereo, 'parallax', -100, 100, 1).name('Paralaje (px)');
-  add(stereo, 'scale', 40, 180, 1).name('Escala (%)');
+  add(stereo, 'scale', 40, 220, 1).name('Escala (%)');
   stereo.open();
 
   const alignment = gui.addFolder('Alineación');

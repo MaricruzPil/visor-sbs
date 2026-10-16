@@ -10,7 +10,6 @@ export function showToast(message) {
 /** Pantalla completa auténtica cuando el navegador lo admite; CSS inmersivo si no. */
 export function createImmersiveMode(onLayoutChange) {
   const wrap = document.getElementById('displayWrap');
-  const stage = document.getElementById('viewerStage');
   const button = document.getElementById('cardboardBtn');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   let inCardboard = false;
@@ -80,11 +79,12 @@ export function createImmersiveMode(onLayoutChange) {
     layout();
   }
 
-  function tapped(event) {
-    if (!inCardboard || event.pointerType === 'mouse') return;
+  function tapped(pointerType) {
+    if (!pointerType) { lastTap = 0; return; }
+    if (!inCardboard || pointerType === 'mouse') return;
     const time = Date.now();
-    if (time - lastTap < 800) { lastTap = 0; exitCardboard(); }
-    else { lastTap = time; }
+    if (time - lastTap < 500) { lastTap = 0; exitCardboard(); }
+    else lastTap = time;
   }
 
   function keydown(event) {
@@ -95,7 +95,7 @@ export function createImmersiveMode(onLayoutChange) {
   fullscreenBtn.addEventListener('click', toggleFullscreen);
   document.addEventListener('fullscreenchange', fullscreenChanged);
   document.addEventListener('keydown', keydown);
-  stage.addEventListener('pointerdown', tapped);
 
-  return { enterCardboard, exitCardboard };
+
+  return { enterCardboard, exitCardboard, tap: tapped };
 }

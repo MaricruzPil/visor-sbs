@@ -124,3 +124,30 @@ Reemplaza `USUARIO` por tu cuenta, y crea primero el repositorio vacío en GitHu
 - GitHub Pages — https://docs.github.com/en/pages
 
 **Licencia educativa:** El código de esta muestra se entrega para ser adaptado y utilizado en clase. Las imágenes de demostración fueron generadas para este proyecto.
+
+## 9. Calibración persistente y controles táctiles
+
+La distancia inicial entre centros ópticos es **6 cm aproximados**: `6 × 96 / 2.54 × factor de pantalla` píxeles CSS. No se usa `devicePixelRatio` como DPI físico. En el panel, compara la barra de **3 cm** con una regla y ajusta el factor de pantalla. La separación se recalcula al redimensionar, girar o entrar en modo inmersivo; se limita al ancho disponible y se recomienda orientación horizontal si no cabe. Cada ojo permanece recortado a su mitad mediante scissor. El paralaje es un ajuste independiente de la distancia óptica.
+
+- **Mover:** arrastra un dedo para trasladar ambos ojos juntos.
+- **Separar / juntar:** arrastra horizontalmente para ajustar el paralaje en sentidos opuestos.
+- **Pellizcar:** zoom común de 40 a 220 %, en cualquiera de los dos modos. Al añadir o retirar un dedo se reinicia la referencia del gesto para evitar saltos. El zoom se centra en las imágenes.
+- **Teclado Bluetooth:** flechas para el modo seleccionado; `M` o espacio cambia modo; `+`/`-` ajusta zoom; `[`/`]` ajusta paralaje. Los campos del panel conservan su edición normal.
+- **Gamepad estándar:** joystick izquierdo/cruceta para mover o separar; botón A cambia modo; LB/RB reduce/aumenta zoom; LT/RT reduce/aumenta paralaje. Zona muerta 20 % y velocidad limitada por tiempo. La asignación depende del mando; los mandos que solo envían eventos multimedia pueden resultar inaccesibles desde la web. Los gestos siguen disponibles.
+- **Salir de Cardboard:** Esc, salida de pantalla completa del sistema o dos toques breves consecutivos. Un arrastre o pellizco no cuenta como toque de salida.
+
+No se crean puntos ni marcadores ópticos sobre las fotografías. **Recorte superior (%)** oculta el mismo porcentaje en ambos ojos mediante UV, conserva la proporción visible y nunca modifica el JPG. No hay detección automática de márgenes: para evitar eliminar contenido útil, el valor inicial es cero. El recorte manual es una preferencia global que se conserva al cambiar de imagen; si la siguiente foto no tiene margen, vuelve a cero.
+
+`js/calibration.js` centraliza valores, validación y persistencia; `js/interactions.js` gestiona punteros, teclado y mandos. Panel, gestos y mando modifican el mismo objeto. Se guardan automáticamente en `localStorage` (clave `stereolab-calibration`) con debounce de 250 ms; cambiar de foto, ocultar o abandonar la página fuerza el guardado pendiente. No se almacenan píxeles. Los valores se recuperan al iniciar, se ignoran propiedades desconocidas como `showDots` y se admiten objetos anteriores con `calibracion` o configuración directa en esa clave. Si el almacenamiento está bloqueado, el visor conserva los ajustes en memoria e informa de la limitación. **Restablecer calibración** recupera los valores iniciales y los guarda; cargar una foto nunca restablece la calibración. La exportación JSON continúa disponible.
+
+### Validación automatizada
+
+Con Node.js 24, ejecutar:
+
+```bash
+node --test --test-isolation=none tests/*.test.mjs
+```
+
+Las pruebas comprueban validación, separación óptica, límites, persistencia, debounce, restablecimiento, almacenamiento inaccesible y transiciones de gestos. La sintaxis se verifica con `node --check` para cada módulo. Las pruebas con dobles de objetos no sustituyen una prueba visual de WebGL.
+
+Pendiente de validar en hardware real: precisión con regla, apariencia Full/Half-SBS, orientación, fullscreen/Cardboard en Android/iOS, pellizco y salida con toques, y mapeo específico del mando Bluetooth. El navegador debe poder acceder a los CDN originales para renderizar.

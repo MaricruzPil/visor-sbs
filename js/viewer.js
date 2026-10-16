@@ -1,15 +1,8 @@
 import * as THREE from 'three';
 import { createStereoScene } from './scene.js';
 
-export const DEFAULT_CONFIG = Object.freeze({
-  parallax: 0,       // px: separa o acerca las vistas en sentidos opuestos
-  scale: 100,        // %: tamaño de ambas vistas
-  panX: 0,          // px: desplazamiento horizontal compartido
-  panY: 0,          // px: desplazamiento vertical compartido
-  vertical: 0,      // px: corrige diferencia vertical ENTRE ojos
-  format: 'full',   // 'full': SBS completo; 'half': Half-SBS (comprimido)
-  swap: false,      // intercambiar L y R
-});
+export { DEFAULT_CONFIG } from './calibration.js';
+import { opticalLayout } from './calibration.js';
 
 function halfUV(side, imageWidth) {
   // Evita la mezcla de columnas en la frontera entre mitades por filtrado lineal.
@@ -56,19 +49,34 @@ export function createStereoViewer(stage, settings) {
     if (!width || !height) return;
 
     // Relación de aspecto de UNA vista: el modo Half-SBS corrige la compresión horizontal.
+    const crop = params.cropTop / 100;
+    for (const geometry of [geometryLeft, geometryRight]) {
+      const uv = geometry.getAttribute('uv');
+      for (let i = 0; i < uv.count; i++) uv.setY(i, i < 2 ? 1 - crop : 0);
+      uv.needsUpdate = true;
+    }
+    const visibleHeight = imageHeight * (1 - crop);
     const eyeAspect = params.format === 'half'
-      ? imageWidth / imageHeight
-      : (imageWidth / 2) / imageHeight;
-    const viewportAspect = (width / 2) / height;
-    const fit = Math.min(1, viewportAspect / eyeAspect);
+      ? imageWidth / visibleHeight
+      : (imageWidth / 2) / visibleHeight;
+    const { offset, separation } = opticalLayout(width, params);
+    const usableWidth = Math.min(separation, width - separation);
+    const fit = Math.min(1, (usableWidth / height) / eyeAspect);
     const worldHeight = 2 * fit * (params.scale / 100);
     const worldWidth = worldHeight * eyeAspect;
     const px = 2 / height; // Convierte px CSS en unidades ortográficas.
 
     meshLeft.scale.set(worldWidth, worldHeight, 1);
     meshRight.scale.set(worldWidth, worldHeight, 1);
-    meshLeft.position.set((params.panX - params.parallax / 2) * px, (-params.panY + params.vertical / 2) * px, 0);
-    meshRight.position.set((params.panX + params.parallax / 2) * px, (-params.panY - params.vertical / 2) * px, 0);
+    // Limitar la traslación compartida sin perder la alineación relativa.
+    const leftBase = offset - params.parallax / 2;
+    const rightBase = -offset + params.parallax / 2;
+    const xLimit = width / 4 + worldWidth / px / 2 - 12;
+    const yLimit = height / 2 + worldHeight / px / 2 - 12;
+    const panX = Math.max(-xLimit - Math.min(leftBase, rightBase), Math.min(xLimit - Math.max(leftBase, rightBase), params.panX));
+    const panY = Math.max(-yLimit + Math.abs(params.vertical) / 2, Math.min(yLimit - Math.abs(params.vertical) / 2, params.panY));
+    meshLeft.position.set((leftBase + panX) * px, (-panY + params.vertical / 2) * px, 0);
+    meshRight.position.set((rightBase + panX) * px, (-panY - params.vertical / 2) * px, 0);
     meshLeft.geometry = params.swap ? geometryRight : geometryLeft;
     meshRight.geometry = params.swap ? geometryLeft : geometryRight;
     engine.requestRender();

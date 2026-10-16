@@ -3,6 +3,9 @@ import { createCalibrationGUI } from './controls.js';
 import { loadSbsImage } from './fileLoader.js';
 import { createImmersiveMode, showToast } from './ui.js';
 
+import { createPersistence, opticalLayout } from './calibration.js';
+import { createInteractions } from './interactions.js';
+
 const config = { ...DEFAULT_CONFIG };
 const stage = document.getElementById('viewerStage');
 const info = document.getElementById('imageStatus');
@@ -10,6 +13,8 @@ const dimensions = document.getElementById('imageDimensions');
 const emptyState = document.getElementById('emptyState');
 const fileInput = document.getElementById('fileInput');
 const demoButtons = [document.getElementById('demoOneBtn'), document.getElementById('demoTwoBtn')];
+const saveStatus = document.getElementById('saveStatus');
+const persistence = createPersistence(config, message => { saveStatus.textContent = message; });
 let requestCounter = 0;
 let viewer;
 
@@ -23,17 +28,40 @@ try {
   throw error;
 }
 
-const calibration = createCalibrationGUI(document.getElementById('guiHost'), config, () => viewer.update());
-createImmersiveMode(() => viewer.resize());
+function changed() {
+  viewer.update();
+  calibration.refresh();
+  document.getElementById('screenReference').style.width = `${3 * 96 / 2.54 * config.screenFactor}px`;
+  document.getElementById('moveMode').setAttribute('aria-pressed', String(config.interactionMode === 'move'));
+  document.getElementById('separateMode').setAttribute('aria-pressed', String(config.interactionMode === 'separate'));
+  updateLayoutNotice();
+  persistence.schedule();
+}
+function updateLayoutNotice() {
+  const width = stage.getBoundingClientRect().width;
+  document.getElementById('layoutNotice').textContent = opticalLayout(width, config).limited
+    ? 'Ancho insuficiente para esta separación. Usa el teléfono horizontalmente o ajusta la distancia.' : '';
+}
+const calibration = createCalibrationGUI(document.getElementById('guiHost'), config, changed);
+const immersive = createImmersiveMode(() => { viewer.resize(); updateLayoutNotice(); });
+createInteractions(stage, config, changed, type => immersive.tap(type), showToast);
+for (const [id, mode] of [['moveMode', 'move'], ['separateMode', 'separate']]) {
+  document.getElementById(id).addEventListener('click', () => { config.interactionMode = mode; changed(); });
+}
+window.addEventListener('pagehide', () => persistence.flush());
+document.addEventListener('visibilitychange', () => { if (document.hidden) persistence.flush(); });
+new ResizeObserver(updateLayoutNotice).observe(stage);
+changed();
 
 function resetCalibration() {
   Object.assign(config, DEFAULT_CONFIG);
-  calibration.refresh();
-  viewer.update();
+  changed();
+  persistence.flush();
   showToast('Calibración restablecida.');
 }
 
 async function displaySource(source, selectedDemo = -1) {
+  persistence.flush();
   const requestId = ++requestCounter;
   info.textContent = 'Cargando fotografía…';
   try {

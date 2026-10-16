@@ -52,7 +52,7 @@
             </div>
 
             <div class="display-wrap" id="displayWrap">
-              <div id="viewerStage" class="viewer-stage" role="img" aria-label="Vista izquierda y derecha de la fotografía SBS">
+              <div id="viewerStage" class="viewer-stage" tabindex="0" role="img" aria-label="Vista izquierda y derecha de la fotografía SBS">
                 <div class="eye-label eye-label-left" aria-hidden="true">L · Izquierdo</div>
                 <div class="eye-label eye-label-right" aria-hidden="true">R · Derecho</div>
                 <div class="center-divider" aria-hidden="true"></div>
@@ -95,6 +95,14 @@
               <span class="status-chip">EN VIVO</span>
             </div>
             <p class="aside-description">Mueve los controles. Los cambios se aplican instantáneamente a las dos perspectivas.</p>
+            <div class="interaction-toolbar" aria-label="Modo de gesto">
+              <button id="moveMode" type="button" class="btn btn-outline-soft" aria-pressed="true">Mover</button>
+              <button id="separateMode" type="button" class="btn btn-outline-soft" aria-pressed="false">Separar / juntar</button>
+            </div>
+            <p id="saveStatus" class="small-note" role="status">Ajustes locales</p>
+            <p id="layoutNotice" class="small-note" role="status"></p>
+            <div class="screen-calibration"><span>Referencia de 3 cm: compara con una regla y ajusta el factor de pantalla.</span><div class="reference-scroll"><div id="screenReference" aria-label="Barra de referencia de tres centímetros"></div></div></div>
+            <p class="small-note">Un dedo: mover o separar. Dos dedos: zoom. Teclado: flechas, M cambia modo, +/− zoom, [ / ] paralaje. Mando estándar: cruceta/joystick, A modo, LB/RB zoom, LT/RT paralaje. Algunos mandos multimedia no envían eventos accesibles al navegador.</p>
             <div id="guiHost" class="gui-host"></div>
             <div class="aside-buttons">
               <button id="resetBtn" type="button" class="btn btn-outline-soft w-100">↺ Restablecer calibración</button>
